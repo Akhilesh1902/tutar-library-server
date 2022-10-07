@@ -1,15 +1,18 @@
-import express from 'express';
-import http from 'http';
+import express, { response } from 'express';
+import http, { STATUS_CODES } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { MongoDBIntegration } from './mongo.js';
 import { AWSInstance } from './awsIntegration.js';
+import bodyParcer from 'body-parser';
 dotenv.config();
 
 const app = express();
 app.use(cors());
+app.use(bodyParcer.json());
+app.use(bodyParcer.urlencoded({ extended: false }));
 
-const PORT = process.env.PORT || 3010;
+const PORT = process.env.PORT || 3030;
 const CORS = {
   origin: ['https://tutar-webapp.netlify.app', 'http://localhost:3000'],
 };
@@ -35,8 +38,25 @@ app.get('/model-metadata', async (req, res) => {
   res.send(await mongoDBClient._getCollectionData('model-metadata'));
 });
 
-app.get('/:modelName', async (req, res) => {
-  res.send(await awsInstance.getObject('models/' + req.params.modelName));
+app.get('/models/:modelName', async (req, res) => {
+  res.send({
+    modelName: req.params.modelName,
+    model: await awsInstance.getObject('models/' + req.params.modelName),
+  });
+});
+
+app.post('/login', async (req, res) => {
+  const { username } = req.body;
+  const userData = await mongoDBClient._getCollectionData('userData');
+  const data = userData.find((data) => data.username === username);
+
+  if (data) {
+    res.send({ ...data, statusCode: 200 });
+  } else
+    res.sendStatus(401).send({
+      error: 'invalid user',
+      description: 'Please enter valid username and password',
+    });
 });
 
 server.listen(PORT, () => {

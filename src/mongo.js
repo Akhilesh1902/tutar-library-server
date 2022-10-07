@@ -17,8 +17,10 @@ export class MongoDBIntegration {
     }
   }
   async _getCollectionData(collectionName) {
+    console.log('getting collection data');
+    console.log(collectionName);
     const result = await this.client
-      .db(this.dbName)
+      ?.db(this.dbName)
       .collection(collectionName)
       .find()
       .toArray();
