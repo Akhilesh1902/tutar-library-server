@@ -27,4 +27,12 @@ export class MongoDBIntegration {
     // console.log(result);
     return result;
   }
+  async addData(data, collectionName) {
+    const result = await this.client
+      ?.db(this.dbName)
+      .collection(collectionName)
+      .updateOne({ username: data.username }, { $set: data }, { upsert: true });
+    console.log(result);
+    return result;
+  }
 }

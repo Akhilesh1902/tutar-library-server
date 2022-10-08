@@ -1,5 +1,5 @@
-import express, { response } from 'express';
-import http, { STATUS_CODES } from 'http';
+import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { MongoDBIntegration } from './mongo.js';
@@ -57,6 +57,12 @@ app.post('/login', async (req, res) => {
       error: 'invalid user',
       description: 'Please enter valid username and password',
     });
+});
+
+app.post('/adduser', async (req, res) => {
+  const { body } = req;
+  console.log(body);
+  res.send(await mongoDBClient.addData(body, 'userData'));
 });
 
 server.listen(PORT, () => {
