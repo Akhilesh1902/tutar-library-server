@@ -37,6 +37,9 @@ app.get('/', (req, res) => {
 app.get('/model-metadata', async (req, res) => {
   res.send(await mongoDBClient._getCollectionData('model-metadata'));
 });
+app.get('/alluser', async (req, res) => {
+  res.send(await mongoDBClient._getCollectionData('userData'));
+});
 
 app.get('/models/:modelName', async (req, res) => {
   res.send({
@@ -57,6 +60,45 @@ app.post('/login', async (req, res) => {
       error: 'invalid user',
       description: 'Please enter valid username and password',
     });
+});
+
+const downloadHandeler = async (data, type, messages) => {
+  const user = (await mongoDBClient._getCollectionData('userData')).find(
+    (item) => (item.username = data.username)
+  );
+  if (user[type].includes(data.name)) {
+    return {
+      status: 200,
+      message: (type = 'requestedModels'
+        ? 'You already requseted please wait for the admin to confirm your request'
+        : 'You already approved this model'),
+    };
+  }
+  const newData = {
+    ...user,
+    [type]: [...user.requestedModels, data.name],
+  };
+  const resp = await mongoDBClient.addData(newData, 'userData');
+  return {
+    status: 200,
+    message: (type = 'requestedModels'
+      ? 'Your request is received please wait for the admin to confirm your request'
+      : 'Your approval is received in the server'),
+  };
+};
+
+app.post('/reqdownload', async (req, res) => {
+  const { body } = req;
+
+  const result = await downloadHandeler(body, 'requestedModels');
+  res.send(result);
+});
+
+app.post('/approveDownload', async (req, res) => {
+  const { body } = req;
+  const user = (await mongoDBClient._getCollectionData('userData')).find(
+    (item) => (item.username = body.username)
+  );
 });
 
 app.post('/adduser', async (req, res) => {

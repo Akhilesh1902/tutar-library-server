@@ -24,7 +24,7 @@ export class MongoDBIntegration {
       .collection(collectionName)
       .find()
       .toArray();
-    // console.log(result);
+    // console.log( result );
     return result;
   }
   async addData(data, collectionName) {
@@ -32,7 +32,7 @@ export class MongoDBIntegration {
       ?.db(this.dbName)
       .collection(collectionName)
       .updateOne({ username: data.username }, { $set: data }, { upsert: true });
-    console.log(result);
+    // console.log(result);
     return result;
   }
 }
