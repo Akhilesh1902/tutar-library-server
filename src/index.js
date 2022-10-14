@@ -55,11 +55,11 @@ app.post('/login', async (req, res) => {
 
   if (data) {
     res.send({ ...data, statusCode: 200 });
-  } else
-    res.sendStatus(401).send({
-      error: 'invalid user',
-      description: 'Please enter valid username and password',
-    });
+  }
+  res.status(401).send({
+    error: 'invalid user',
+    description: 'Please enter valid username and password',
+  });
 });
 
 const downloadHandeler = async (data, type, messages) => {
