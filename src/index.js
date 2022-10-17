@@ -50,22 +50,24 @@ app.get('/models/:modelName', async (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { username } = req.body;
+  console.log({ username });
   const userData = await mongoDBClient._getCollectionData('userData');
   const data = userData.find((data) => data.username === username);
 
   if (data) {
     res.send({ ...data, statusCode: 200 });
-  }
-  res.status(401).send({
-    error: 'invalid user',
-    description: 'Please enter valid username and password',
-  });
+  } else
+    res.status(401).send({
+      error: 'invalid user',
+      description: 'Please enter valid username and password',
+    });
 });
 
 const downloadHandeler = async (data, type, messages) => {
   const user = (await mongoDBClient._getCollectionData('userData')).find(
-    (item) => (item.username = data.username)
+    (item) => item.username === data.username
   );
+  console.log({ user });
   if (user[type].includes(data.name)) {
     return {
       status: 200,
@@ -89,6 +91,7 @@ const downloadHandeler = async (data, type, messages) => {
 
 app.post('/reqdownload', async (req, res) => {
   const { body } = req;
+  console.log(body);
 
   const result = await downloadHandeler(body, 'requestedModels');
   res.send(result);
