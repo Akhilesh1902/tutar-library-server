@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { MongoDBIntegration } from './mongo.js';
 import { AWSInstance } from './awsIntegration.js';
+import { sendMailToUser } from './sendMail.js';
 import bodyParcer from 'body-parser';
 dotenv.config();
 
@@ -64,9 +65,8 @@ app.post('/login', async (req, res) => {
 });
 
 const downloadHandeler = async (data, type, messages) => {
-  const user = (await mongoDBClient._getCollectionData('userData')).find(
-    (item) => item.username === data.username
-  );
+  const allusers = await mongoDBClient._getCollectionData('userData');
+  const user = allusers.find((item) => item.username === data.username);
   console.log({ user });
   if (user[type].includes(data.name)) {
     return {
@@ -80,6 +80,14 @@ const downloadHandeler = async (data, type, messages) => {
     ...user,
     [type]: [...user.requestedModels, data.name],
   };
+
+  const admins = allusers.filter((user) => user.role === 'Admin');
+  console.log(admins);
+  // return;
+  admins.forEach((admin) => {
+    sendMailToUser(admin.email, { username: newData.username });
+  });
+
   const resp = await mongoDBClient.addData(newData, 'userData');
   return {
     status: 200,
@@ -92,7 +100,6 @@ const downloadHandeler = async (data, type, messages) => {
 app.post('/reqdownload', async (req, res) => {
   const { body } = req;
   console.log(body);
-
   const result = await downloadHandeler(body, 'requestedModels');
   res.send(result);
 });
