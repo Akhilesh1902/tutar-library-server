@@ -19,7 +19,7 @@ app.use(bodyParcer.urlencoded({ limit: '20mb', extended: false }));
 
 const PORT = process.env.PORT || 3030;
 const CORS = {
-  origin: ['https://tutar-webapp.netlify.app', 'http://localhost:3000'],
+  origin: ['https://tutar-model-panel.netlify.app', 'http://localhost:3000'],
   // origin:[*],
   methods: ['GET', 'POST'],
 };
