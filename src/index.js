@@ -6,16 +6,22 @@ import { MongoDBIntegration } from './mongo.js';
 import { AWSInstance } from './awsIntegration.js';
 import { sendMailToUser } from './sendMail.js';
 import bodyParcer from 'body-parser';
+import fileUpload from 'express-fileupload';
+import { Server } from 'socket.io';
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
-app.use(bodyParcer.json());
-app.use(bodyParcer.urlencoded({ extended: false }));
+app.use(fileUpload());
+app.use(bodyParcer.json({ limit: '20mb' }));
+app.use(bodyParcer.urlencoded({ limit: '20mb', extended: false }));
 
 const PORT = process.env.PORT || 3030;
 const CORS = {
   origin: ['https://tutar-webapp.netlify.app', 'http://localhost:3000'],
+  // origin:[*],
+  methods: ['GET', 'POST'],
 };
 const server = http.createServer(app, { cors: CORS });
 
@@ -25,7 +31,6 @@ const databaseName = 'tutAR-webApp-db';
 const mongoDBClient = new MongoDBIntegration(MongoURL, databaseName);
 
 //aws connections
-
 const AWS_Access_Id = process.env.AWS_ACCESS_ID;
 const AWS_Access_key = process.env.AWS_ACCESS_KEY;
 const region = 'ap-south-1';
@@ -36,7 +41,9 @@ app.get('/', (req, res) => {
 });
 
 app.get('/model-metadata', async (req, res) => {
-  res.send(await mongoDBClient._getCollectionData('model-metadata'));
+  res.send(
+    await mongoDBClient._getCollectionData('library-panel-model-metadata')
+  );
 });
 app.get('/alluser', async (req, res) => {
   res.send(await mongoDBClient._getCollectionData('userData'));
@@ -45,7 +52,7 @@ app.get('/alluser', async (req, res) => {
 app.get('/models/:modelName', async (req, res) => {
   res.send({
     modelName: req.params.modelName,
-    model: await awsInstance.getObject('models/' + req.params.modelName),
+    model: await awsInstance.getObject(req.params.modelName),
   });
 });
 
@@ -64,7 +71,7 @@ app.post('/login', async (req, res) => {
     });
 });
 
-const downloadHandeler = async (data, type, messages) => {
+const downloadHandeler = async (data, type) => {
   const allusers = await mongoDBClient._getCollectionData('userData');
   const user = allusers.find((item) => item.username === data.username);
   console.log({ user });
@@ -104,13 +111,6 @@ app.post('/reqdownload', async (req, res) => {
   res.send(result);
 });
 
-app.post('/approveDownload', async (req, res) => {
-  const { body } = req;
-  const user = (await mongoDBClient._getCollectionData('userData')).find(
-    (item) => (item.username = body.username)
-  );
-});
-
 app.post('/adduser', async (req, res) => {
   const { body } = req;
   console.log(body);
@@ -119,4 +119,34 @@ app.post('/adduser', async (req, res) => {
 
 server.listen(PORT, () => {
   console.log('connected to port ' + PORT);
+});
+
+// socket connection
+
+const io = new Server(server, { cors: CORS, maxHttpBufferSize: 15e6 });
+io.on('connection', (socket) => {
+  console.log('new Connection');
+  socket.on('newFile', (msg) => {
+    console.log(msg);
+    const {
+      thumbName,
+      thumb,
+      file,
+      name,
+      Classes: Class,
+      DisplayName,
+      Scale,
+      Subjects: Subject,
+      Topic,
+    } = msg;
+    const metaData = msg;
+    delete metaData.file;
+    console.log(metaData);
+    // return;
+    awsInstance.putObject(name, file);
+    mongoDBClient.addData(metaData, 'library-panel-model-metadata');
+  });
+  io.on('disconnect', () => {
+    console.log('user disconnected');
+  });
 });
