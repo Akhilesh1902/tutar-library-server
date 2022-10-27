@@ -133,10 +133,10 @@ io.on('connection', (socket) => {
       thumb,
       file,
       name,
-      Classes: Class,
+      Class,
       DisplayName,
       Scale,
-      Subjects: Subject,
+      Subject,
       Topic,
     } = msg;
     const metaData = msg;
